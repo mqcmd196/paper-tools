@@ -72,7 +72,7 @@ def read_frame_at_time(cap: cv2.VideoCapture, t_sec: float, fps: float):
 
 
 def extract_frames_to_pdf(
-    video_path: str, start_sec: float, end_sec: float, step_sec: float, cols: int = 3, rows: int = 4, custom_times: list = None
+    video_path: str, start_sec: float, end_sec: float, step_sec: float, cols: int = 3, rows: int = 4, custom_times: list = None, skip_times: list = None
 ):
     """Extract frames every step_sec between start_sec and end_sec and compose PDFs in a grid layout.
     Images are arranged in a grid (cols x rows) with timestamps. Each page is saved as a separate PDF file.
@@ -80,6 +80,7 @@ def extract_frames_to_pdf(
     Images are scaled to fit the cell width while preserving aspect ratio.
     Timestamps are displayed relative to start_sec (starting from 0).
     Additional custom time points can be specified via custom_times parameter.
+    Frames at relative times specified in skip_times will be excluded.
     """
     # --- basic validations ---
     if step_sec <= 0:
@@ -171,6 +172,18 @@ def extract_frames_to_pdf(
         c = None
 
         for tval in times:
+            # Calculate relative time for this frame
+            relative_time = tval - start_sec
+
+            # Skip if this relative time is in skip_times
+            if skip_times:
+                # Check if relative_time matches any skip time (with small epsilon for floating point comparison)
+                eps_skip = 0.01  # Allow 0.01 second tolerance
+                should_skip = any(abs(relative_time - skip_t) < eps_skip for skip_t in skip_times)
+                if should_skip:
+                    print(f"[info] Skipping frame at t={relative_time:.2f}s (absolute: {tval:.2f}s)")
+                    continue
+
             # read image
             img = read_frame_at_time(cap, tval, fps)
             if img is None:
@@ -232,8 +245,7 @@ def extract_frames_to_pdf(
                 anchor="sw",
             )
 
-            # draw timestamp label centered at bottom of cell (relative to start_sec)
-            relative_time = tval - start_sec
+            # draw timestamp label centered at bottom of cell (using already calculated relative_time)
             label = seconds_label(relative_time, step_sec)
             x_label_center = x_cell + cell_w / 2.0
             y_label = y_cell + label_pad  # position label baseline
@@ -267,6 +279,9 @@ def main():
     parser.add_argument(
         "--custom-times", type=parse_time, nargs='+', help="Additional custom time points (seconds or hh:mm:ss format, space-separated)"
     )
+    parser.add_argument(
+        "--skip-times", type=parse_time, nargs='+', help="Relative time points to skip (t values shown in PDF, seconds or hh:mm:ss format, space-separated)"
+    )
     args = parser.parse_args()
 
     extract_frames_to_pdf(
@@ -277,6 +292,7 @@ def main():
         cols=args.cols,
         rows=args.rows,
         custom_times=args.custom_times,
+        skip_times=args.skip_times,
     )
 
 
