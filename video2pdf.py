@@ -10,6 +10,38 @@ from reportlab.lib.pagesizes import B5
 from reportlab.lib.utils import ImageReader
 
 
+def parse_time(time_str: str) -> float:
+    """Parse time string and convert to seconds.
+    Supports formats:
+    - '100' -> 100 seconds
+    - '20:10' -> 20 minutes 10 seconds = 1210 seconds
+    - '20:10.5' -> 20 minutes 10.5 seconds = 1210.5 seconds
+    - '1:10:05' -> 1 hour 10 minutes 5 seconds = 4205 seconds
+    """
+    time_str = time_str.strip()
+
+    # If no colon, treat as seconds
+    if ':' not in time_str:
+        return float(time_str)
+
+    # Split by colon
+    parts = time_str.split(':')
+
+    if len(parts) == 2:
+        # mm:ss format
+        minutes = float(parts[0])
+        seconds = float(parts[1])
+        return minutes * 60 + seconds
+    elif len(parts) == 3:
+        # hh:mm:ss format
+        hours = float(parts[0])
+        minutes = float(parts[1])
+        seconds = float(parts[2])
+        return hours * 3600 + minutes * 60 + seconds
+    else:
+        raise ValueError(f"Invalid time format: {time_str}")
+
+
 def seconds_label(t_sec: float, step_sec: float) -> str:
     """Build timestamp label 't = n (s)'. Use int if step is an integer, else 2 decimals."""
     if float(step_sec).is_integer():
@@ -223,9 +255,9 @@ def main():
         description="Extract frames every N seconds from a video and compose them into PDFs in a grid layout (B5 width, dynamic height)."
     )
     parser.add_argument("video", help="Path to input video file")
-    parser.add_argument("start", type=float, help="Start time in seconds")
-    parser.add_argument("end", type=float, help="End time in seconds")
-    parser.add_argument("interval", type=float, help="Sampling interval in seconds")
+    parser.add_argument("start", type=parse_time, help="Start time (seconds or hh:mm:ss format)")
+    parser.add_argument("end", type=parse_time, help="End time (seconds or hh:mm:ss format)")
+    parser.add_argument("interval", type=parse_time, help="Sampling interval (seconds or hh:mm:ss format)")
     parser.add_argument(
         "--cols", type=int, default=3, help="Number of columns in grid layout (default: 3)"
     )
@@ -233,7 +265,7 @@ def main():
         "--rows", type=int, default=4, help="Number of rows in grid layout (default: 4)"
     )
     parser.add_argument(
-        "--custom-times", type=float, nargs='+', help="Additional custom time points in seconds (space-separated)"
+        "--custom-times", type=parse_time, nargs='+', help="Additional custom time points (seconds or hh:mm:ss format, space-separated)"
     )
     args = parser.parse_args()
 
