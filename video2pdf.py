@@ -3,6 +3,7 @@
 
 import argparse
 from pathlib import Path
+from io import BytesIO
 import cv2
 from PIL import Image
 from reportlab.pdfgen import canvas
@@ -71,6 +72,19 @@ def read_frame_at_time(cap: cv2.VideoCapture, t_sec: float, fps: float):
     return Image.fromarray(frame)
 
 
+def compress_image(img: Image.Image, quality: int = 85) -> ImageReader:
+    """Compress PIL Image to JPEG with specified quality and return ImageReader.
+    Quality ranges from 1 (worst) to 95 (best). Default is 85 for good balance.
+    """
+    buffer = BytesIO()
+    # Convert RGBA to RGB if necessary
+    if img.mode == 'RGBA':
+        img = img.convert('RGB')
+    img.save(buffer, format='JPEG', quality=quality, optimize=True)
+    buffer.seek(0)
+    return ImageReader(buffer)
+
+
 def extract_frames_to_pdf(
     video_path: str,
     start_sec: float,
@@ -81,6 +95,7 @@ def extract_frames_to_pdf(
     custom_times: list = None,
     skip_times: list = None,
     start_time_offset: float = 0.0,
+    quality: int = 85,
 ):
     """Extract frames every step_sec between start_sec and end_sec and compose PDFs in a grid layout.
     Images are arranged in a grid (cols x rows) with timestamps. Each page is saved as a separate PDF file.
@@ -89,6 +104,7 @@ def extract_frames_to_pdf(
     Timestamps are displayed as: (tval - start_sec + start_time_offset).
     Additional custom time points can be specified via custom_times parameter.
     Frames at relative times specified in skip_times will be excluded (considering start_time_offset).
+    Images are compressed with specified JPEG quality (1-95) to reduce PDF size.
     """
     # --- basic validations ---
     if step_sec <= 0:
@@ -246,9 +262,9 @@ def extract_frames_to_pdf(
             x_img = x_cell + (cell_w - draw_w) / 2.0
             y_img = y_cell + label_height  # leave space for label at bottom
 
-            # draw image
+            # draw image (with compression)
             c.drawImage(
-                ImageReader(img),
+                compress_image(img, quality),
                 x_img,
                 y_img,
                 width=draw_w,
@@ -317,6 +333,12 @@ def main():
         default=0.0,
         help="Offset for timestamp display (default: 0). PDF will show t = (actual_time - start + offset)",
     )
+    parser.add_argument(
+        "--quality",
+        type=int,
+        default=85,
+        help="JPEG quality for image compression (1-95, default: 85). Lower values = smaller file size but lower quality",
+    )
     args = parser.parse_args()
 
     extract_frames_to_pdf(
@@ -329,6 +351,7 @@ def main():
         custom_times=args.custom_times,
         skip_times=args.skip_times,
         start_time_offset=args.start_time_offset,
+        quality=args.quality,
     )
 
 
