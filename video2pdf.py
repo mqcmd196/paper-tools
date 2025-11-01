@@ -80,14 +80,15 @@ def extract_frames_to_pdf(
     rows: int = 4,
     custom_times: list = None,
     skip_times: list = None,
+    start_time_offset: float = 0.0,
 ):
     """Extract frames every step_sec between start_sec and end_sec and compose PDFs in a grid layout.
     Images are arranged in a grid (cols x rows) with timestamps. Each page is saved as a separate PDF file.
     Page width is fixed to B5 width, height is calculated dynamically with minimal vertical spacing.
     Images are scaled to fit the cell width while preserving aspect ratio.
-    Timestamps are displayed relative to start_sec (starting from 0).
+    Timestamps are displayed as: (tval - start_sec + start_time_offset).
     Additional custom time points can be specified via custom_times parameter.
-    Frames at relative times specified in skip_times will be excluded.
+    Frames at relative times specified in skip_times will be excluded (considering start_time_offset).
     """
     # --- basic validations ---
     if step_sec <= 0:
@@ -179,8 +180,8 @@ def extract_frames_to_pdf(
         c = None
 
         for tval in times:
-            # Calculate relative time for this frame
-            relative_time = tval - start_sec
+            # Calculate relative time for this frame (with offset)
+            relative_time = tval - start_sec + start_time_offset
 
             # Skip if this relative time is in skip_times
             if skip_times:
@@ -310,6 +311,12 @@ def main():
         nargs="+",
         help="Relative time points to skip (t values shown in PDF, seconds or hh:mm:ss format, space-separated)",
     )
+    parser.add_argument(
+        "--start-time-offset",
+        type=parse_time,
+        default=0.0,
+        help="Offset for timestamp display (default: 0). PDF will show t = (actual_time - start + offset)",
+    )
     args = parser.parse_args()
 
     extract_frames_to_pdf(
@@ -321,6 +328,7 @@ def main():
         rows=args.rows,
         custom_times=args.custom_times,
         skip_times=args.skip_times,
+        start_time_offset=args.start_time_offset,
     )
 
 
