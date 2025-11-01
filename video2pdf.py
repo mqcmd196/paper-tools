@@ -40,13 +40,14 @@ def read_frame_at_time(cap: cv2.VideoCapture, t_sec: float, fps: float):
 
 
 def extract_frames_to_pdf(
-    video_path: str, start_sec: float, end_sec: float, step_sec: float, cols: int = 3, rows: int = 4
+    video_path: str, start_sec: float, end_sec: float, step_sec: float, cols: int = 3, rows: int = 4, custom_times: list = None
 ):
     """Extract frames every step_sec between start_sec and end_sec and compose PDFs in a grid layout.
     Images are arranged in a grid (cols x rows) with timestamps. Each page is saved as a separate PDF file.
     Page width is fixed to B5 width, height is calculated dynamically with minimal vertical spacing.
     Images are scaled to fit the cell width while preserving aspect ratio.
     Timestamps are displayed relative to start_sec (starting from 0).
+    Additional custom time points can be specified via custom_times parameter.
     """
     # --- basic validations ---
     if step_sec <= 0:
@@ -80,6 +81,15 @@ def extract_frames_to_pdf(
         while t <= end_sec + eps:
             times.append(min(t, end_sec))
             t += step_sec
+
+        # Add custom times if specified
+        if custom_times:
+            for custom_t in custom_times:
+                if custom_t >= 0:  # only add valid times
+                    times.append(custom_t)
+
+        # Sort and remove duplicates
+        times = sorted(set(times))
 
         if not times:
             raise RuntimeError("No frames to extract. Check range and interval.")
@@ -222,6 +232,9 @@ def main():
     parser.add_argument(
         "--rows", type=int, default=4, help="Number of rows in grid layout (default: 4)"
     )
+    parser.add_argument(
+        "--custom-times", type=float, nargs='+', help="Additional custom time points in seconds (space-separated)"
+    )
     args = parser.parse_args()
 
     extract_frames_to_pdf(
@@ -231,6 +244,7 @@ def main():
         step_sec=args.interval,
         cols=args.cols,
         rows=args.rows,
+        custom_times=args.custom_times,
     )
 
 
