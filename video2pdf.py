@@ -21,11 +21,11 @@ def parse_time(time_str: str) -> float:
     time_str = time_str.strip()
 
     # If no colon, treat as seconds
-    if ':' not in time_str:
+    if ":" not in time_str:
         return float(time_str)
 
     # Split by colon
-    parts = time_str.split(':')
+    parts = time_str.split(":")
 
     if len(parts) == 2:
         # mm:ss format
@@ -72,7 +72,14 @@ def read_frame_at_time(cap: cv2.VideoCapture, t_sec: float, fps: float):
 
 
 def extract_frames_to_pdf(
-    video_path: str, start_sec: float, end_sec: float, step_sec: float, cols: int = 3, rows: int = 4, custom_times: list = None, skip_times: list = None
+    video_path: str,
+    start_sec: float,
+    end_sec: float,
+    step_sec: float,
+    cols: int = 3,
+    rows: int = 4,
+    custom_times: list = None,
+    skip_times: list = None,
 ):
     """Extract frames every step_sec between start_sec and end_sec and compose PDFs in a grid layout.
     Images are arranged in a grid (cols x rows) with timestamps. Each page is saved as a separate PDF file.
@@ -179,9 +186,13 @@ def extract_frames_to_pdf(
             if skip_times:
                 # Check if relative_time matches any skip time (with small epsilon for floating point comparison)
                 eps_skip = 0.01  # Allow 0.01 second tolerance
-                should_skip = any(abs(relative_time - skip_t) < eps_skip for skip_t in skip_times)
+                should_skip = any(
+                    abs(relative_time - skip_t) < eps_skip for skip_t in skip_times
+                )
                 if should_skip:
-                    print(f"[info] Skipping frame at t={relative_time:.2f}s (absolute: {tval:.2f}s)")
+                    print(
+                        f"[info] Skipping frame at t={relative_time:.2f}s (absolute: {tval:.2f}s)"
+                    )
                     continue
 
             # read image
@@ -267,20 +278,37 @@ def main():
         description="Extract frames every N seconds from a video and compose them into PDFs in a grid layout (B5 width, dynamic height)."
     )
     parser.add_argument("video", help="Path to input video file")
-    parser.add_argument("start", type=parse_time, help="Start time (seconds or hh:mm:ss format)")
-    parser.add_argument("end", type=parse_time, help="End time (seconds or hh:mm:ss format)")
-    parser.add_argument("interval", type=parse_time, help="Sampling interval (seconds or hh:mm:ss format)")
     parser.add_argument(
-        "--cols", type=int, default=3, help="Number of columns in grid layout (default: 3)"
+        "start", type=parse_time, help="Start time (seconds or hh:mm:ss format)"
+    )
+    parser.add_argument(
+        "end", type=parse_time, help="End time (seconds or hh:mm:ss format)"
+    )
+    parser.add_argument(
+        "interval",
+        type=parse_time,
+        help="Sampling interval (seconds or hh:mm:ss format)",
+    )
+    parser.add_argument(
+        "--cols",
+        type=int,
+        default=3,
+        help="Number of columns in grid layout (default: 3)",
     )
     parser.add_argument(
         "--rows", type=int, default=4, help="Number of rows in grid layout (default: 4)"
     )
     parser.add_argument(
-        "--custom-times", type=parse_time, nargs='+', help="Additional custom time points (seconds or hh:mm:ss format, space-separated)"
+        "--custom-times",
+        type=parse_time,
+        nargs="+",
+        help="Additional custom time points (seconds or hh:mm:ss format, space-separated)",
     )
     parser.add_argument(
-        "--skip-times", type=parse_time, nargs='+', help="Relative time points to skip (t values shown in PDF, seconds or hh:mm:ss format, space-separated)"
+        "--skip-times",
+        type=parse_time,
+        nargs="+",
+        help="Relative time points to skip (t values shown in PDF, seconds or hh:mm:ss format, space-separated)",
     )
     args = parser.parse_args()
 
