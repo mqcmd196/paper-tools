@@ -78,9 +78,9 @@ def compress_image(img: Image.Image, quality: int = 85) -> ImageReader:
     """
     buffer = BytesIO()
     # Convert RGBA to RGB if necessary
-    if img.mode == 'RGBA':
-        img = img.convert('RGB')
-    img.save(buffer, format='JPEG', quality=quality, optimize=True)
+    if img.mode == "RGBA":
+        img = img.convert("RGB")
+    img.save(buffer, format="JPEG", quality=quality, optimize=True)
     buffer.seek(0)
     return ImageReader(buffer)
 
