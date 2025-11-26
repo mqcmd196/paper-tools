@@ -96,6 +96,7 @@ def extract_frames_to_pdf(
     skip_times: list = None,
     start_time_offset: float = 0.0,
     quality: int = 85,
+    use_numbering: bool = False,
 ):
     """Extract frames every step_sec between start_sec and end_sec and compose PDFs in a grid layout.
     Images are arranged in a grid (cols x rows) with timestamps. Each page is saved as a separate PDF file.
@@ -105,6 +106,7 @@ def extract_frames_to_pdf(
     Additional custom time points can be specified via custom_times parameter.
     Frames at relative times specified in skip_times will be excluded (considering start_time_offset).
     Images are compressed with specified JPEG quality (1-95) to reduce PDF size.
+    If use_numbering is True, images are labeled with (1), (2), ... instead of time stamps.
     """
     # --- basic validations ---
     if step_sec <= 0:
@@ -274,7 +276,10 @@ def extract_frames_to_pdf(
             )
 
             # draw timestamp label centered at bottom of cell (using already calculated relative_time)
-            label = seconds_label(relative_time, step_sec)
+            if use_numbering:
+                label = f"({frame_idx + 1})"
+            else:
+                label = seconds_label(relative_time, step_sec)
             x_label_center = x_cell + cell_w / 2.0
             y_label = y_cell + label_pad  # position label baseline
             c.drawCentredString(x_label_center, y_label, label)
@@ -339,6 +344,11 @@ def main():
         default=85,
         help="JPEG quality for image compression (1-95, default: 85). Lower values = smaller file size but lower quality",
     )
+    parser.add_argument(
+        "--numbering",
+        action="store_true",
+        help="Use numbering (1), (2), ... instead of time stamps",
+    )
     args = parser.parse_args()
 
     extract_frames_to_pdf(
@@ -352,6 +362,7 @@ def main():
         skip_times=args.skip_times,
         start_time_offset=args.start_time_offset,
         quality=args.quality,
+        use_numbering=args.numbering,
     )
 
 
