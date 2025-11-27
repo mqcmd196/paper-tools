@@ -103,7 +103,7 @@ def extract_frames_to_pdf(
     Page width is fixed to B5 width, height is calculated dynamically with minimal vertical spacing.
     Images are scaled to fit the cell width while preserving aspect ratio.
     Timestamps are displayed as: (tval - start_sec + start_time_offset).
-    Additional custom time points can be specified via custom_times parameter.
+    Additional custom time points can be specified via custom_times parameter (as relative times shown in PDF).
     Frames at relative times specified in skip_times will be excluded (considering start_time_offset).
     Images are compressed with specified JPEG quality (1-95) to reduce PDF size.
     If use_numbering is True, images are labeled with (1), (2), ... instead of time stamps.
@@ -141,11 +141,13 @@ def extract_frames_to_pdf(
             times.append(min(t, end_sec))
             t += step_sec
 
-        # Add custom times if specified
+        # Add custom times if specified (custom_times are relative times, convert to absolute)
         if custom_times:
             for custom_t in custom_times:
-                if custom_t >= 0:  # only add valid times
-                    times.append(custom_t)
+                # Convert relative time to absolute time
+                absolute_t = custom_t + start_sec - start_time_offset
+                if absolute_t >= 0:  # only add valid times
+                    times.append(absolute_t)
 
         # Sort and remove duplicates
         times = sorted(set(times))
@@ -324,7 +326,7 @@ def main():
         "--custom-times",
         type=parse_time,
         nargs="+",
-        help="Additional custom time points (seconds or hh:mm:ss format, space-separated)",
+        help="Additional custom time points as relative times (t values shown in PDF, seconds or hh:mm:ss format, space-separated)",
     )
     parser.add_argument(
         "--skip-times",
