@@ -93,6 +93,7 @@ def extract_frames_to_pdf(
     cols: int = 3,
     rows: int = 4,
     custom_times: list = None,
+    custom_absolute_times: list = None,
     skip_times: list = None,
     start_time_offset: float = 0.0,
     quality: int = 85,
@@ -104,6 +105,7 @@ def extract_frames_to_pdf(
     Images are scaled to fit the cell width while preserving aspect ratio.
     Timestamps are displayed as: (tval - start_sec + start_time_offset).
     Additional custom time points can be specified via custom_times parameter (as relative times shown in PDF).
+    Additional absolute time points can be specified via custom_absolute_times parameter (as absolute video times).
     Frames at relative times specified in skip_times will be excluded (considering start_time_offset).
     Images are compressed with specified JPEG quality (1-95) to reduce PDF size.
     If use_numbering is True, images are labeled with (1), (2), ... instead of time stamps.
@@ -148,6 +150,12 @@ def extract_frames_to_pdf(
                 absolute_t = custom_t + start_sec - start_time_offset
                 if absolute_t >= 0:  # only add valid times
                     times.append(absolute_t)
+
+        # Add custom absolute times if specified (custom_absolute_times are absolute video times)
+        if custom_absolute_times:
+            for abs_t in custom_absolute_times:
+                if abs_t >= 0:  # only add valid times
+                    times.append(abs_t)
 
         # Sort and remove duplicates
         times = sorted(set(times))
@@ -329,6 +337,12 @@ def main():
         help="Additional custom time points as relative times (t values shown in PDF, seconds or hh:mm:ss format, space-separated)",
     )
     parser.add_argument(
+        "--custom-absolute-times",
+        type=parse_time,
+        nargs="+",
+        help="Additional custom time points as absolute video times (seconds or hh:mm:ss format, space-separated)",
+    )
+    parser.add_argument(
         "--skip-times",
         type=parse_time,
         nargs="+",
@@ -361,6 +375,7 @@ def main():
         cols=args.cols,
         rows=args.rows,
         custom_times=args.custom_times,
+        custom_absolute_times=args.custom_absolute_times,
         skip_times=args.skip_times,
         start_time_offset=args.start_time_offset,
         quality=args.quality,
